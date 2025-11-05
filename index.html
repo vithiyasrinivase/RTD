@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RTD Sensor Data Display</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f0f4f8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .container {
+      background: white;
+      padding: 20px 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    h1 {
+      color: #333;
+    }
+    .reading {
+      font-size: 2em;
+      margin: 10px 0;
+      color: #0078d7;
+    }
+    button {
+      padding: 10px 15px;
+      background: #0078d7;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #005fa3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>RTD Sensor Temperature</h1>
+    <p class="reading" id="temperature">-- °C</p>
+    <button onclick="connectToSerial()">Connect to Arduino</button>
+  </div>
+
+  <script>
+    async function connectToSerial() {
+      try {
+        const port = await navigator.serial.requestPort();
+        await port.open({ baudRate: 9600 });
+        const decoder = new TextDecoderStream();
+        const inputDone = port.readable.pipeTo(decoder.writable);
+        const inputStream = decoder.readable;
+        const reader = inputStream.getReader();
+
+        document.getElementById('temperature').textContent = 'Reading...';
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) {
+            reader.releaseLock();
+            break;
+          }
+          if (value) {
+            document.getElementById('temperature').textContent = `${value.trim()} °C`;
+          }
+        }
+      } catch (err) {
+        alert('Error connecting to Arduino: ' + err);
+      }
+    }
+  </script>
+</body>
+</html>
